@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypbreak</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="style2.css" rel="stylesheet">
+</head>
+<body>
+    <div id="notification" class="notification">
+        <span id="notification-text"></span>
+    </div>
+
+    <nav class="navbar">
+        <div class="nav-brand">
+            <img src="logo.jpg" alt="CryptoSecure Logo" class="nav-logo">
+            <span>Crypbreak</span>
+        </div>
+        <div class="nav-user">
+            <span id="user-name"></span>
+            <button onclick="logout()" class="btn-logout">
+                <i class="fas fa-sign-out-alt"></i>
+                Cerrar Sesión
+            </button>
+        </div>
+    </nav>
+
+    <div class="dashboard-container" role="main">
+        <h1>Datos Curiosos de Criptografía</h1>
+        
+        <div class="crypto-facts-grid">
+            <div class="fact-card">
+                <i class="fas fa-history"></i>
+                <h3>Criptografía Clásica</h3>
+                <p>Descubre los métodos antiguos de cifrado y su evolución histórica.</p>
+                <button class="btn-primary" onclick="showFactDetails('classic')">
+                    <i class="fas fa-book-open"></i>
+                    Leer más
+                </button>
+            </div>
+
+            <div class="fact-card">
+                <i class="fas fa-lock"></i>
+                <h3>Criptografía Moderna</h3>
+                <p>Explora los algoritmos y técnicas contemporáneas de cifrado.</p>
+                <button class="btn-primary" onclick="showFactDetails('modern')">
+                    <i class="fas fa-book-open"></i>
+                    Leer más
+                </button>
+            </div>
+
+            <div class="fact-card">
+                <i class="fas fa-atom"></i>
+                <h3>Seguridad Cuántica</h3>
+                <p>Conoce el futuro de la criptografía en la era cuántica.</p>
+                <button class="btn-primary" onclick="showFactDetails('quantum')">
+                    <i class="fas fa-book-open"></i>
+                    Leer más
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="fact-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-title"></h2>
+            <div id="modal-content"></div>
+            <button class="btn-primary" onclick="generatePDF()">
+                <i class="fas fa-file-pdf"></i>
+                Generar PDF
+            </button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

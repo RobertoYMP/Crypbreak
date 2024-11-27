@@ -2,11 +2,11 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
     try {
-        await mongoose.connect('mongodb://localhost:27017/cryptosecure', {
+        await mongoose.connect('mongodb+srv://martinezrobertoyahir26:<db_password>@cluster0.pkdt9.mongodb.net/', {
             useNewUrlParser: true,
             useUnifiedTopology: true
         });
-        console.log('MongoDB conectado');
+        console.log('Conectado a MongoDB Atlas');
     } catch (error) {
         console.error('Error al conectar MongoDB:', error);
         process.exit(1);

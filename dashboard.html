@@ -76,5 +76,30 @@
     </div>
 
     <script src="app.js"></script>
+    <script>
+async function generatePDF() {
+    const title = document.getElementById('modal-title').textContent;
+    const pdfMap = {
+        "Criptografía Clásica": "CC.pdf",
+        "Criptografía Moderna": "CM.pdf",
+        "Seguridad Cuántica": "TC.pdf"
+    };
+    const fileName = pdfMap[title];
+    if (!fileName) {
+        showNotification("No se encontró un PDF para este tema", "error");
+        return;
+    }
+    const pdfUrl = `PDF/${fileName}`;
+    const link = document.createElement("a");
+    link.href = pdfUrl;
+    link.download = fileName; 
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showNotification("PDF descargado exitosamente");
+}
+
+        </script>
 </body>
 </html>

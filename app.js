@@ -1,138 +1,111 @@
-const API_URL = 'http://localhost:5000/api';
-
+// Función que maneja el registro de un nuevo usuario
 async function handleRegister(event) {
-    event.preventDefault();
+    event.preventDefault();  // Evita que el formulario se envíe automáticamente
     
+    // Obtiene los valores ingresados en los campos del formulario
     const name = document.getElementById('register-name').value;
     const email = document.getElementById('register-email').value;
     const password = document.getElementById('register-password').value;
     const confirmPassword = document.getElementById('register-confirm-password').value;
-    
+
+    // Verifica que las contraseñas coincidan
     if (password !== confirmPassword) {
-        showNotification('Las contraseñas no coinciden', 'error');
-        return;
+        showNotification('Las contraseñas no coinciden', 'error');  // Muestra mensaje de error
+        return;  // Detiene la ejecución si las contraseñas no coinciden
     }
-    
+
+    // Valida que la contraseña cumpla con los requisitos (puedes personalizarla)
     if (!validatePassword(password)) {
         showNotification('La contraseña no cumple con los requisitos', 'error');
         return;
     }
-    
-    try {
-        const response = await fetch(`${API_URL}/register`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                name,
-                email,
-                password
-            })
-        });
 
-        const data = await response.json();
+    // HASHEO DE LA CONTRASEÑA
+    // Aquí es donde se genera el hash de la contraseña usando el algoritmo SHA3-256
+    const hashedPassword = sha3_256(password);  // Se convierte la contraseña en su hash SHA3-256
+
+    try {
+        // Simula la creación de un código de verificación
+        const verificationCode = Math.random().toString(36).slice(2, 8).toUpperCase();  // Genera un código aleatorio
+        localStorage.setItem('pendingVerification', JSON.stringify({
+            name,
+            email,
+            hashedPassword,  // Se guarda la contraseña hasheada
+            verificationCode
+        }));
+
+        // Se genera un contenido de correo electrónico con el código de verificación
+        const emailContent = generateEmailTemplate('verification', { code: verificationCode });
+        console.log('Correo de verificación enviado:', emailContent);  // Aquí se simula el envío del correo
         
-        if (!response.ok) {
-            throw new Error(data.message);
-        }
-        
-        showNotification(data.message);
-        showForm('verify-form');
+        // Muestra notificación al usuario
+        showNotification('Registro exitoso. Por favor verifica tu correo electrónico.');
+        showForm('verify-form');  // Muestra el formulario de verificación
     } catch (error) {
-        showNotification(error.message, 'error');
-        console.error('Registration error:', error);
+        showNotification('Error al registrar usuario', 'error');
+        console.error('Error en el registro:', error);
     }
 }
 
-// Reemplazar la función handleLogin
+// Función que maneja el inicio de sesión del usuario
 async function handleLogin(event) {
-    event.preventDefault();
+    event.preventDefault();  // Evita el envío del formulario
     
+    // Obtiene los valores ingresados en el formulario de inicio de sesión
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
-    
-    try {
-        const response = await fetch(`${API_URL}/login`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                email,
-                password
-            })
-        });
 
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.message);
-        }
-        
-        // Guardar token y datos del usuario
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
+    // HASHEO DE LA CONTRASEÑA
+    // Se genera un hash de la contraseña ingresada
+    const hashedPassword = sha3_256(password);  // Aquí se genera el hash SHA3-256 de la contraseña
+
+    try {
+        await new Promise(resolve => setTimeout(resolve, 1000));  // Simula un pequeño retraso
+        localStorage.setItem('user', JSON.stringify({ email, name: 'Usuario' }));  // Guarda los datos del usuario en localStorage
         showNotification('Inicio de sesión exitoso');
+        
+        // Después de un retraso de 1.5 segundos, redirige al dashboard
         setTimeout(() => {
-            window.location.href = 'dashboard.html';
+            window.location.href = 'dashboard.html';  // Redirige al dashboard
         }, 1500);
     } catch (error) {
-        showNotification(error.message, 'error');
-        console.error('Login error:', error);
+        showNotification('Error al iniciar sesión', 'error');
+        console.error('Error en el inicio de sesión:', error);
     }
 }
 
-// Reemplazar la función handleVerification
-async function handleVerification(event) {
-    event.preventDefault();
+// Función que maneja la verificación del código recibido por correo
+function handleVerification(event) {
+    event.preventDefault();  // Evita que el formulario se envíe automáticamente
     
-    const code = document.getElementById('verification-code').value;
-    const email = document.getElementById('register-email').value;
-    
-    try {
-        const response = await fetch(`${API_URL}/verify`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                email,
-                code
-            })
-        });
+    const verificationCode = document.getElementById('verification-code').value;  // Obtiene el código ingresado
+    const storedData = JSON.parse(localStorage.getItem('pendingVerification'));  // Obtiene los datos almacenados (nombre, correo, contraseña hasheada, código)
 
-        const data = await response.json();
-        
-        if (!response.ok) {
-            throw new Error(data.message);
-        }
-        
-        showNotification(data.message);
-        setTimeout(() => {
-            showForm('login-form');
-        }, 1500);
-    } catch (error) {
-        showNotification(error.message, 'error');
-        console.error('Verification error:', error);
+    // Verifica si el código ingresado coincide con el que se generó
+    if (verificationCode === storedData.verificationCode) {
+        // Si el código es correcto, se elimina la verificación pendiente y se notifica al usuario
+        localStorage.removeItem('pendingVerification');
+        showNotification('Verificación exitosa. Ahora puedes iniciar sesión.');
+        showForm('login-form');  // Muestra el formulario de inicio de sesión
+    } else {
+        // Si el código es incorrecto, muestra un mensaje de error
+        showNotification('Código incorrecto. Inténtalo de nuevo.', 'error');
     }
 }
 
-
-// Utility Functions
+// Función para mostrar notificaciones
 function showNotification(message, type = 'success') {
     const notification = document.getElementById('notification');
     const notificationText = document.getElementById('notification-text');
     
-    notification.className = `notification ${type} show`;
-    notificationText.textContent = message;
+    notification.className = `notification ${type} show`;  // Muestra la notificación con el tipo especificado (success o error)
+    notificationText.textContent = message;  // Establece el texto de la notificación
     
+    // La notificación desaparecerá después de 3 segundos
     setTimeout(() => {
-        notification.className = 'notification';
+        notification.className = 'notification';  // Oculta la notificación
     }, 3000);
 }
-
 function showForm(formId) {
     document.querySelectorAll('.form-container').forEach(form => {
         form.classList.add('hidden');
@@ -140,7 +113,6 @@ function showForm(formId) {
     document.getElementById(formId).classList.remove('hidden');
 }
 
-// Password validation
 function validatePassword(password) {
     const requirements = {
         length: password.length >= 8,
@@ -150,7 +122,6 @@ function validatePassword(password) {
         special: /[!@#$%^&*]/.test(password)
     };
 
-    // Update UI for password requirements
     Object.keys(requirements).forEach(req => {
         const element = document.getElementById(req);
         if (element) {
@@ -165,23 +136,18 @@ function validatePassword(password) {
     return Object.values(requirements).every(Boolean);
 }
 
-// Authentication Handlers
 async function handleLogin(event) {
     event.preventDefault();
     
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
     
-    // Hash the password using SHA3-256
+    // UTILIZAMOS EL HASHEO SHA3_256 EN HEXADECIMAL
     const hashedPassword = sha3_256(password);
     
     try {
-        // Simulate API call - In production, replace with actual API call
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Store user session
-        localStorage.setItem('user', JSON.stringify({ email, name: 'Usuario Demo' }));
-        
+        localStorage.setItem('user', JSON.stringify({ email, name: 'Usuario' }));
         showNotification('Inicio de sesión exitoso');
         setTimeout(() => {
             window.location.href = 'dashboard.html';
@@ -210,7 +176,6 @@ async function handleRegister(event) {
         return;
     }
     
-    // Hash the password using SHA3-256
     const hashedPassword = sha3_256(password);
     
     try {
@@ -295,40 +260,32 @@ const cryptoFacts = {
     classic: {
         title: 'Criptografía Clásica',
         content: `
-            <h3>El Cifrado César</h3>
-            <p>El cifrado César, nombrado en honor a Julio César, es uno de los métodos de cifrado más simples y ampliamente conocidos. César usaba este método para comunicarse con sus generales durante las campañas militares.</p>
-            
-            <h3>La Máquina Enigma</h3>
-            <p>Durante la Segunda Guerra Mundial, la máquina Enigma fue utilizada por las fuerzas alemanas para cifrar sus comunicaciones. Su descifrado por los Aliados fue un factor crucial en el desarrollo de la guerra.</p>
-            
-            <h3>El Disco de Cifrado</h3>
-            <p>También conocido como cifrado de Alberti, fue el primer sistema de cifrado polialfabético conocido en la historia de la criptografía occidental.</p>
-        `
+            <h3 style="text-align: center;">LAS CARTAS SECRETAS DE MARÍA ESTUARDO DURANTE SU CAUTIVERIO</h3>
+            <p style="text-align: justify;">En el siglo XVI, María, Reina de Escocia, usó un cifrado de sustitución simple para comunicarse con sus aliados. Sin embargo, este fue descifrado por los criptoanalistas de Isabel I, revelando una conspiración contra la reina que llevó a la ejecución de María en 1587. Este caso ilustra los riesgos de los cifrados débiles.</p>
+            <p style="text-align: justify;">Los análisis identificaron patrones femeninos en verbos y adjetivos, así como menciones frecuentes a su cautiverio y a Francis Walsingham, jefe de espías de Isabel I. El sistema era un reemplazo simple, donde símbolos representaban letras o palabras comunes.</p>
+            <p style="text-align: justify;">Descifrar todas las posibilidades habría llevado siglos, por lo que se empleó un algoritmo enfocado en soluciones probables. Las cartas trataban temas como su comunicación secreta con Francia, propuestas de matrimonio entre Isabel y el duque de Anjou, y negociaciones sobre su liberación y retorno al trono junto a su hijo, Jacobo VI.</p>
+            <p style="text-align: justify;">Estos documentos reflejan a una María atenta y activa en asuntos políticos de Escocia, Inglaterra y Francia, mostrando su habilidad como analista internacional. Su contenido será clave para futuros estudios históricos y de criptografía temprana.</p>
+
+                    `
     },
     modern: {
         title: 'Criptografía Moderna',
         content: `
-            <h3>RSA (Rivest-Shamir-Adleman)</h3>
-            <p>RSA es uno de los primeros sistemas criptográficos de clave pública y es ampliamente utilizado para la transmisión segura de datos. Fue publicado en 1977 por Ron Rivest, Adi Shamir y Leonard Adleman.</p>
-            
-            <h3>AES (Advanced Encryption Standard)</h3>
-            <p>AES es uno de los algoritmos más populares usados en criptografía simétrica. Fue establecido como estándar por el Instituto Nacional de Estándares y Tecnología (NIST) en 2001.</p>
-            
-            <h3>Criptografía de Curva Elíptica</h3>
-            <p>Este tipo de criptografía ofrece el mismo nivel de seguridad que RSA pero con claves más cortas, lo que la hace más eficiente en términos de recursos computacionales.</p>
+        <h3 style="text-align: center;">RSA (Rivest-Shamir-Adleman)</h3>
+        <p style="text-align: justify;">El algoritmo RSA, desarrollado en 1977 por Rivest, Shamir y Adleman, introdujo la criptografía de clave pública basada en la factorización de números primos grandes, marcando el fin de los sistemas de clave simétrica y abriendo la puerta a internet seguro. Su concepto fue inspirado en trabajos previos del matemático británico Clifford Cocks, cuyo trabajo permaneció clasificado.</p>
+        <p style="text-align: justify;">RSA utiliza la multiplicación de dos números primos grandes para generar una clave pública. La seguridad del sistema se basa en la dificultad de factorizar el semiprimo generado, lo que hace casi imposible descifrar el mensaje sin conocer los primos.</p>
+        <p style="text-align: justify;">Este sistema es fundamental para la criptografía moderna y sigue siendo relevante, ya que la capacidad de cálculo actual sigue aumentando, permitiendo trabajar con números primos de mayor tamaño.</p>
+                
         `
     },
     quantum: {
         title: 'Seguridad Cuántica',
         content: `
-            <h3>Computación Cuántica</h3>
-            <p>Las computadoras cuánticas podrían romper muchos de los sistemas criptográficos actuales, lo que ha llevado al desarrollo de la criptografía post-cuántica.</p>
-            
-            <h3>Criptografía Cuántica</h3>
-            <p>La distribución de claves cuánticas (QKD) permite a dos partes producir una clave secreta compartida que puede ser usada para cifrar y descifrar mensajes.</p>
-            
-            <h3>Algoritmos Post-Cuánticos</h3>
-            <p>Se están desarrollando nuevos algoritmos que serían resistentes incluso a ataques de computadoras cuánticas, como los basados en retículos y códigos.</p>
+            <h3 style="text-align: center;">Computación Cuántica</h3>
+            <p style="text-align: justify;">En 2019, Google alcanzó la supremacía cuántica con su computadora Sycamore, resolviendo un problema matemático en 200 segundos que habría tomado a la supercomputadora Summit 10,000 años. Este logro demostró cómo los sistemas cuánticos pueden superar exponencialmente a las computadoras clásicas en tareas específicas.</p>
+            <p style="text-align: justify;">El término "supremacía cuántica" refiere a cuando una computadora cuántica supera a las clásicas en una tarea. Sin embargo, algunos cuestionaron el resultado, argumentando que Summit podría haber completado la tarea en 2.5 días con optimización.</p>
+            <p style="text-align: justify;">Aunque el problema resuelto no tiene aplicaciones prácticas inmediatas, este avance impulsa el desarrollo de algoritmos cuánticos en áreas como la inteligencia artificial, la química y la criptografía, lo que presenta nuevos retos para la seguridad de los sistemas actuales.</p>
+
         `
     }
 };
